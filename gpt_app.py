@@ -17,8 +17,8 @@ from streamlit_chat import message
 
 load_dotenv()
 
-openai.api_key = st.secrets('OPENAI_API_KEY')
-password = st.secrets('DECRYPT_KEY')
+openai.api_key = st.secrets['OPENAI_API_KEY']
+password = st.secrets['DECRYPT_KEY']
 
 COMPLETIONS_MODEL = "text-davinci-003"
 EMBEDDING_MODEL = "text-embedding-ada-002"
