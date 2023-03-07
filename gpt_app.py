@@ -14,10 +14,11 @@ import streamlit as st
 from streamlit_chat import message
 
 
+
 load_dotenv()
 
-openai.api_key = os.getenv('OPENAI_API_KEY')
-password = os.getenv('DECRYPT_KEY')
+openai.api_key = st.secrets('OPENAI_API_KEY')
+password = st.secrets('DECRYPT_KEY')
 
 COMPLETIONS_MODEL = "text-davinci-003"
 EMBEDDING_MODEL = "text-embedding-ada-002"
@@ -154,7 +155,7 @@ def chatgpt_clone(input, history):
 #     page_icon=":robot:"
 # )
 
-st.header("ChatGPT Clone with Streamlit")
+st.header("AASLD Abstracts Q/A or Summarization")
 
 history_input = []
 
