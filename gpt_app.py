@@ -64,7 +64,7 @@ def order_document_sections_by_query_similarity(query: str, contexts: dict[(str,
     
     return document_similarities
 
-MAX_SECTION_LEN = 2000
+MAX_SECTION_LEN = 1000
 SEPARATOR = "\n* "
 ENCODING = "gpt2"  # encoding for text-davinci-003
 
