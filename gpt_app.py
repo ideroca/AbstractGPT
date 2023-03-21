@@ -71,7 +71,7 @@ ENCODING = "gpt2"  # encoding for text-davinci-003
 encoding = tiktoken.get_encoding(ENCODING)
 separator_len = len(encoding.encode(SEPARATOR))
 
-task = st.radio('Select a task:', ['Question and Answer', 'Summarization'])
+task = st.radio('Select a task:', ['Question and Answer'])
 
 
 def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) -> str:
