@@ -20,7 +20,7 @@ load_dotenv()
 openai.api_key = st.secrets['OPENAI_API_KEY']
 password = st.secrets['DECRYPT_KEY']
 
-COMPLETIONS_MODEL = "text-davinci-003"
+MODEL ="gpt-3.5-turbo"
 EMBEDDING_MODEL = "text-embedding-ada-002"
 
 
@@ -64,7 +64,7 @@ def order_document_sections_by_query_similarity(query: str, contexts: dict[(str,
     
     return document_similarities
 
-MAX_SECTION_LEN = 700
+MAX_SECTION_LEN = 2000
 SEPARATOR = "\n* "
 ENCODING = "gpt2"  # encoding for text-davinci-003
 
@@ -100,18 +100,29 @@ def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) 
     st.write("\n".join(chosen_sections_indexes))
 
     if task == 'Question and Answer':
-        header = """Answer the question as truthfully as possible using the provided context, and if the answer is not contained within the text below, say "I don't know."\n\nContext:\n"""
+        header = ''#"""Answer the question as truthfully as possible using the provided context, and if the answer is not contained within the text below, say "I don't know."\n\nContext:\n"""
         return header + "".join(chosen_sections)+ "\n\nQ: " + question + "\n\nA: "
     elif task == 'Summarization':
         header = """Summarize each of the medical abstracts provided below into a bulleted list that explains the purpose, methods, and results."\n\nContext:\n"""
         return header + "".join(chosen_sections) + "\n\n Summary: "# + question + "\n A:"
     #return header + "".join(chosen_sections) + "\n\n Summary: "# + question + "\n A:"
-COMPLETIONS_API_PARAMS = {
-    # We use temperature of 0.0 because it gives the most predictable, factual answer.
-    "temperature": 0.0,
-    "max_tokens": 1000,
-    "model": COMPLETIONS_MODEL,
-}
+# COMPLETIONS_API_PARAMS = {
+#     # We use temperature of 0.0 because it gives the most predictable, factual answer.
+#     "temperature": 0.0,
+#     "max_tokens": 1000,
+#     "model": COMPLETIONS_MODEL,
+# }
+def getResp(msg):
+    response = openai.ChatCompletion.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": "You are AbstractGPT, an expert on medical knowledge who never offers false information. You will answer the user's questions based on context provided to you."},
+            {"role": "user", "content": f"{msg}"},
+        ],
+        temperature=0,
+    )
+
+    return response['choices'][0]['message']['content']
 
 def answer_query_with_context(
     query: str,
@@ -128,12 +139,21 @@ def answer_query_with_context(
     # if show_prompt:
     #     print(prompt)
 
-    response = openai.Completion.create(
-                prompt=prompt,
-                **COMPLETIONS_API_PARAMS
-            )
+    # response = openai.Completion.create(
+    #             prompt=prompt,
+    #             **COMPLETIONS_API_PARAMS
+    #         )
+    
+    response = openai.ChatCompletion.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": "You are AbstractGPT, an expert on medical knowledge who never offers false information. You will answer the user's questions based on context provided to you."},
+            {"role": "user", "content": f"{prompt}"},
+        ],
+        temperature=0,
+    )
 
-    return prompt, response["choices"][0]["text"].strip(" \n")
+    return prompt, response['choices'][0]['message']['content'].strip(" \n")# response["choices"][0]["text"].strip(" \n")
 
 df = pd.read_csv('AASLD_abstracs.csv')
 
