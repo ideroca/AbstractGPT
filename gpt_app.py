@@ -10,6 +10,7 @@ import tiktoken
 from tqdm import tqdm
 import pyAesCrypt
 import json
+
 import streamlit as st
 from streamlit_chat import message
 
@@ -22,8 +23,6 @@ password = st.secrets['DECRYPT_KEY']
 
 MODEL ="gpt-3.5-turbo"
 EMBEDDING_MODEL = "text-embedding-ada-002"
-
-
 
 
 # if ~os.path.isfile('embeddings.json'):
@@ -96,12 +95,12 @@ def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) 
         chosen_sections_indexes.append(str(section_index))
             
     # Useful diagnostic information
-    st.write(f"Selected {len(chosen_sections)} document sections:")
-    st.write("\n".join(chosen_sections_indexes))
+    #st.write(f"Selected {len(chosen_sections)} document sections:")
+    #st.write("\n".join(chosen_sections_indexes))
 
     if task == 'Question and Answer':
         header = ''#"""Answer the question as truthfully as possible using the provided context, and if the answer is not contained within the text below, say "I don't know."\n\nContext:\n"""
-        return header + "".join(chosen_sections)+ "\n\nQ: " + question + "\n\nA: "
+        return chosen_sections_indexes, header + "".join(chosen_sections)+ "\n\nQ: " + question + "\n\nA: "
     elif task == 'Summarization':
         header = """Summarize each of the medical abstracts provided below into a bulleted list that explains the purpose, methods, and results."\n\nContext:\n"""
         return header + "".join(chosen_sections) + "\n\n Summary: "# + question + "\n A:"
@@ -124,17 +123,41 @@ def getResp(msg):
 
     return response['choices'][0]['message']['content']
 
+def constructSources(contextList: list[str]):
+    for i in range(len(contextList)):
+        title = contextList[i]
+        title = (title.lower()
+                 .replace(',','')
+                 .replace(' ','-'))
+        if len(title) <= 80:
+            continue
+        parts = title.split('-')
+        new_parts = []
+        new_title = ''
+        for part in parts:
+            if len(new_title) + len(part) +1 <=80:
+                new_parts.append(part)
+                new_title += part + '-'
+            else:
+                break
+        new_title = new_title[:-1]
+        contextList[i] = new_title
+    return [f'https://www.aasld.org/the-liver-meeting/{i}' for i in contextList]
+        
+
+
 def answer_query_with_context(
     query: str,
     df: pd.DataFrame,
     document_embeddings: dict[(str, str), np.array],
     show_prompt: bool = False
 ) -> str:
-    prompt = construct_prompt(
+    contextList, prompt = construct_prompt(
         query,
         document_embeddings,
         df
     )
+    #sourceList = constructSources(contextList)
     
     # if show_prompt:
     #     print(prompt)
@@ -153,7 +176,7 @@ def answer_query_with_context(
         temperature=0,
     )
 
-    return prompt, response['choices'][0]['message']['content'].strip(" \n")# response["choices"][0]["text"].strip(" \n")
+    return contextList, response['choices'][0]['message']['content'].strip(" \n")# response["choices"][0]["text"].strip(" \n")
 
 df = pd.read_csv('AASLD_abstracs.csv')
 
@@ -176,7 +199,7 @@ def chatgpt_clone(input, history):
 # )
 
 st.header("AASLD Abstracts Q/A or Summarization")
-
+placeholder = st.empty()
 history_input = []
 
 if 'generated' not in st.session_state:
@@ -195,19 +218,39 @@ user_input = get_text()
 
 
 if user_input:
-    output = chatgpt_clone(user_input,history_input)
-    st.markdown(f'### Prompt/Context: \n\n{output[0]}')
-    st.markdown(f'### GPT generated response')
-    st.write(output[1])
+    context, output = chatgpt_clone(user_input,history_input)
+    #print(rf'{output}')
+    #st.markdown(f'### Prompt/Context: \n\n{output[0]}')
+    #st.markdown(f'### GPT generated response')
+    #st.write(output[1])
     # output = chatgpt_clone(user_input, history_input)
     # history_input.append([user_input, output])
-    # st.session_state.past.append(user_input)
-    # st.session_state.generated.append(output[1])
+    st.session_state.generated.append(output)
+    st.session_state.past.append(user_input)
+    
+    toDisp = '<ul>'
+    for source in context:
+        toDisp += f'<li><a href="https://www.google.com/search?q={source}">{source.lower().title()}</a></li>'
+    toDisp += '</ul>'
 
-# if st.session_state['generated']:
+if st.session_state['generated']:
+    for i in range(len(st.session_state['generated'])-1, -1, -1):
+        message(st.session_state['past'][i], key = str(i) + '_user', is_user = True)
+        
+        message(f'''{st.session_state["generated"][i]}''', key = str(i), is_table=True)
+        #<hr style="height:1px;border:none;color:#333;background-color:#333;" />
+        message(f'''Sources used:
+        {toDisp}
+        ''', allow_html = True, key = str(i)+'_sources')
 
-#     for i in range(len(st.session_state['generated'])-1, -1, -1):
-#         st.write(st.session_state["generated"][i])
-#         st.markdown('\n\n')
-#         st.write(st.session_state['past'][i])
-#         st.markdown('\n\n')
+
+        
+            #\n\n
+        #         ---
+        #         Sources used:
+        #         {toDisp}
+        #         ''',
+        #         key = str(i), allow_html=True)
+        #st.markdown('\n\n')
+        
+        #st.markdown('\n\n')
