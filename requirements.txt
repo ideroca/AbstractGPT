@@ -6,6 +6,6 @@ pyAesCrypt==6.0.0
 python-dotenv==1.0.0
 selenium==4.8.2
 streamlit==1.14.0
-git+https://github.com/AI-Yash/st-chat.git
+git+https://github.com/0toshigami/st-chat.git
 tiktoken==0.2.0
 tqdm==4.64.1
