@@ -1,14 +1,12 @@
 from dotenv import load_dotenv
 import os
 from bs4 import BeautifulSoup
-from selenium import webdriver
 import numpy as np
 import openai
 import pandas as pd
 import pickle
 import tiktoken
 from tqdm import tqdm
-import pyAesCrypt
 import json
 
 import streamlit as st
@@ -21,7 +19,7 @@ load_dotenv()
 openai.api_key = st.secrets['OPENAI_API_KEY']
 password = st.secrets['DECRYPT_KEY']
 
-MODEL ="gpt-3.5-turbo"
+MODEL ="gpt-4"
 EMBEDDING_MODEL = "text-embedding-ada-002"
 
 
@@ -34,11 +32,11 @@ with open("embeddings.json", "r") as fr:
     embs = json.load(fr)
 
 def get_embedding(text: str, model: str=EMBEDDING_MODEL) -> list[float]:
-    result = openai.Embedding.create(
+    result = openai.embeddings.create(
       model=model,
       input=text
     )
-    return result["data"][0]["embedding"]
+    return result.data[0].embedding
 
 def vector_similarity(x: list[float], y: list[float]) -> float:
     """
@@ -63,7 +61,7 @@ def order_document_sections_by_query_similarity(query: str, contexts: dict[(str,
     
     return document_similarities
 
-MAX_SECTION_LEN = 1000
+MAX_SECTION_LEN = 2000
 SEPARATOR = "\n* "
 ENCODING = "gpt2"  # encoding for text-davinci-003
 
@@ -112,7 +110,7 @@ def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) 
 #     "model": COMPLETIONS_MODEL,
 # }
 def getResp(msg):
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model=MODEL,
         messages=[
             {"role": "system", "content": "You are AbstractGPT, an expert on medical knowledge who never offers false information. You will answer the user's questions based on context provided to you."},
@@ -121,7 +119,7 @@ def getResp(msg):
         temperature=0,
     )
 
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 def constructSources(contextList: list[str]):
     for i in range(len(contextList)):
@@ -167,7 +165,7 @@ def answer_query_with_context(
     #             **COMPLETIONS_API_PARAMS
     #         )
     
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model=MODEL,
         messages=[
             {"role": "system", "content": "You are AbstractGPT, an expert on medical knowledge who never offers false information. You will answer the user's questions based on context provided to you."},
@@ -176,7 +174,7 @@ def answer_query_with_context(
         temperature=0,
     )
 
-    return contextList, response['choices'][0]['message']['content'].strip(" \n")# response["choices"][0]["text"].strip(" \n")
+    return contextList, response.choices[0].message.content.strip(" \n")# response["choices"][0]["text"].strip(" \n")
 
 df = pd.read_csv('AASLD_abstracs.csv')
 
@@ -230,7 +228,7 @@ if user_input:
     
     toDisp = '<ul>'
     for source in context:
-        toDisp += f'<li><a href="https://www.google.com/search?q={source}">{source.lower().title()}</a></li>'
+        toDisp += f'<li><a href="https://www.google.com/search?q={source} AASLD">{source.lower().title()}</a></li>'
     toDisp += '</ul>'
 
 if st.session_state['generated']:
