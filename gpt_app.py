@@ -208,7 +208,7 @@ if 'past' not in st.session_state:
 
 
 def get_text():
-    input_text = st.text_input("You: ", key="input")
+    input_text = st.chat_input("Ask a question")
     return input_text
 
 
@@ -232,23 +232,24 @@ if user_input:
     toDisp += '</ul>'
 
 if st.session_state['generated']:
-    for i in range(len(st.session_state['generated'])-1, -1, -1):
-        message(st.session_state['past'][i], key = str(i) + '_user', is_user = True)
-        
-        message(f'''{st.session_state["generated"][i]}''', key = str(i), is_table=True)
-        #<hr style="height:1px;border:none;color:#333;background-color:#333;" />
-        message(f'''Sources used:
-        {toDisp}
-        ''', allow_html = True, key = str(i)+'_sources')
+    for i in range(len(st.session_state['generated'])-1,):
+        with st.chat_message("user"):
+            st.markdown(st.session_state['past'][i])
+        with st.chat_message("assistant"):
+            st.markdown(f'''{st.session_state["generated"][i]}''')
+            #<hr style="height:1px;border:none;color:#333;background-color:#333;" />
+            st.markdown(f'''Sources used:
+            {toDisp}
+            ''', unsafe_allow_html = True)
 
 
-        
-            #\n\n
-        #         ---
-        #         Sources used:
-        #         {toDisp}
-        #         ''',
-        #         key = str(i), allow_html=True)
-        #st.markdown('\n\n')
-        
-        #st.markdown('\n\n')
+            
+                #\n\n
+            #         ---
+            #         Sources used:
+            #         {toDisp}
+            #         ''',
+            #         key = str(i), allow_html=True)
+            #st.markdown('\n\n')
+            
+            #st.markdown('\n\n')
